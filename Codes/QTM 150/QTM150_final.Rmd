@@ -1,0 +1,394 @@
+---
+title: "final project"
+author: 'Min Jin'
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: yes
+  rmdformats::material:
+    code_folding: show
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rmdformats)
+library(tidyverse)
+library(kableExtra)
+library(ggExtra)
+
+# importing dataset 
+CAB <- read.csv("CAB_RIDES.csv")
+
+
+```
+
+# Part A
+## Examination of Dataset and Investigation 
+Uber and Lyft are two of the largest transportation services around the world. As we know, the price of a Uber or Lyft trip depends heavily on numerous variables such as the distance to destination, specific time frame, or the demand for rides nearby. Hence, we are interested in how these factors associate with the pricing of both companies' trips.
+
+After acquiring the CAB_RIDES data set, we selected distance and price as the two essential variables for our preliminary research. We will investigate how the price is affected by other variables in the further analysis.
+
+```{r}
+
+# Inspecting the data set
+str(CAB)
+
+```
+
+***
+
+## Aberration
+
+```{r}
+CAB %>% filter(name=="Taxi") %>% summarise("AVG price"=mean(price, na.rm = T), "count taxi"=n()) %>% kable()
+
+sum(is.na(CAB$price))
+```
+
+There are in total 5143 NA in the price variable in the data set, and after inspecting, we found that these NA values all belong to the "Taxi" category in the "name" variable. Since this specific category does not offer any information to us, we decided to drop the "Taxi" variable.
+
+```{r}
+# create a new data frame dropping the category "Taxi"
+cab_new <- CAB[ CAB$name!= "Taxi", , drop=TRUE] 
+sum(is.na(cab_new))
+```
+
+***
+
+## Response Variable
+Price is the response variable because it's determined by many factors in a cab ride such as distance, time, and etc. When we are riding a cab, it's natural for us to think about price as the outcome of a ride.
+
+```{r}
+summary(cab_new$price, na.rm=T) # brief summary of the price (estimate for the ride in USD)
+
+ggplot(data=cab_new, aes(x="",  y=price))+
+  geom_violin(fill="green", alpha=0.5)+
+labs(title="CAB price boxplot", x="Price",
+         y="Percentil") +
+   theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+```
+
+Looking at the summary, ignoring the the mean price each trip situates around 16.56 USD, with a median of 13.5 USD, max of 92 USD and min of 2.5 USD.
+
+***
+
+## Explanatory Variable
+We chose distance traveled as our main explanatory variable. This is a numerical variable. We chose this variable because there is an obvious correlation between price and distance. 
+```{r}
+summary(cab_new$distance) #distance between source and destination (estimate in mile)
+
+ggplot(data=cab_new, aes(x="",  y=distance))+
+  geom_violin(fill="green", alpha=0.5)+
+labs(title="CAB distance boxplot", x="Distance",
+         y="Percentil") +
+   theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+```
+
+Looking at the summary, ignoring the the mean price each trip situates around 2.186 miles, with a median of 2.15 miles, max of 7.46 mile, and min of 0.02 miles.
+
+There are no unusual observations according to the plot of this graph.
+#need to report any unusuable observation for distance. If not say there is no unusual obersvations
+
+***
+
+## Assumptions
+To our knowledge, regardless of whether a trip is provided by a conventional taxi or a rideshare company like Uber or Lyft, the fee of each trip will rise along with the distance traveled. Hence, our assumption is that there is a positive correlation between the distance and the price of each trip. In other words, as the distance traveled (the explanatory variable) by the cab increases, the price paid (the response variable) for the ride increases. The reason for this correlation is that as the distance traveled increases, the cost of gas and labor increases, which increases the total cost of the trip. 
+
+***
+
+## Plotting
+```{r, warning=FALSE}
+# plotting 
+theme_set(theme_bw())  # pre-set the bw theme.
+
+price_dis <- ggplot(cab_new, aes(distance, price)) + 
+ geom_point(col="tomato3", alpha=0.3) +
+  labs( 
+       y="Price", 
+       x="Distance", 
+       title="Distance vs. Price") + geom_smooth(method="lm", se=F)+theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+ggMarginal(price_dis, type = "density", fill="transparent")
+```
+
+From the graph it's hard to see the predicted positive linear relationship, but the trend line reveals that there is in fact a postive linear relationship. The reason for the ambiguous graph is that we have not controlled for other variables like type of cab. For example, a one-mile cab ride in UberXL definitely costs more than a one-mile cab ride in regular Uber. Therefore, this graph can be improved further by controlling for other variables like type of the cab.
+
+******
+
+# Part B
+
+
+## 1. Choosing our second explanatory variable
+We chose the "cab_type" variable as our second explanatory variable since we are interested in comparing the cab prices between the two rideshare comapnies, Uber and Lyft.
+
+Uber is a larger and more well-established rideshare company than Lyft, so we would expect that Uber has a larger share of customers. On the other hand, Lyft has the reputation of having a cheaper fare than Uber and is also extremely prevalent in many major cities. However, what is unknown is how the cab prices between the two companies compare in price at a certain range of distance.
+
+Our target audience is the most typical rideshare consumer, so we will choose the most popular range of distance. We will accomplish this task by the dividing the range of distances in this dataset into quartiles, sorting the observations into the quartile, and finding the quartile with the greatest number of observations. Afterwards, we will exclude all observations except those observations in the most popular distance quartile.
+
+### Check the most frequent distance travelled by riders for comparison in pricing later
+
+```{r}
+summary(cab_new$distance)
+ggplot(cab_new, aes(y = distance)) +
+  geom_boxplot() +
+  ylab("Distance Travelled by Riders (Miles)") +
+  ggtitle("Distribution of Distance Traveled Boxplot") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+ggplot(cab_new,aes(x = distance)) + 
+  geom_histogram(bins=8, 
+                   col="red", 
+                   size=.1) + 
+  xlab("Distance Travelled by Riders (Miles)")+
+  ggtitle("Distribution of Distance Traveled Histogram")+
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+**Using quartils to group distance based on the bosplot and distribution.**
+
+```{r}
+cab_new$distance_fre <- cab_new$distance
+cab_new$distance_fre[cab_new$distance_fre> 2.93] <- "fourth_Q"
+cab_new$distance_fre[cab_new$distance_fre<= 1.27] <- "first_Q"
+cab_new$distance_fre[cab_new$distance_fre> 1.27 & cab_new$distance_fre <= 2.15] <- "second_Q"
+cab_new$distance_fre[cab_new$distance_fre> 2.15 & cab_new$distance_fre <= 2.93] <- "third_Q"
+
+
+cab_new%>%
+  select(price,distance_fre)%>%
+  group_by(distance_fre)%>%
+  dplyr::summarise(Count = n(), "Average Cost" = mean(price))%>%
+  kable(digits = 3,col.names = c("Distance Groups","Count","Average Cost"))%>%
+  kable_styling(position = "center",bootstrap_options = "striped", full_width = F)
+
+# Create a new datafrme controlling for the most frequent distance
+cab_new2 <- cab_new%>%
+  filter(distance_fre == "second_Q")
+```
+
+***
+
+## 2. Using the two explanatory variables, provide a summary table of the outcome using group_by(), arrange(), and summarize() functions.'
+
+```{r}
+#  creating new variables as factors
+cab_new2$cab_type_fac <- as.factor(cab_new2$cab_type)
+cab_new2$name_fac <- as.factor(cab_new2$name)
+
+carname_price <- cab_new2 %>%
+  group_by(cab_type_fac) %>%
+  summarise("count"=n(), "AVG distance"=round(mean(distance, na.rm = T), 3), "AVG price"=round(mean(price, na.rm = T), 2)) 
+
+carname_price %>% arrange(desc(`AVG price`)) %>% kable()
+
+ggplot(cab_new2, aes(cab_type_fac))+ geom_bar(aes(fill=cab_type_fac), width = 0.5) + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) + 
+    labs(title="Lyft vs. Uber", x="cab type") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+The summary table of the count of each cab_type  seemingly substantiate our assumption that Uber has a larger number of customers since Uber has 7728 observations and Lyft has only 7473.  However, our second assumption that Lyft is cheaper does not seem to hold here. While the mean distance between two cab types is approximately the same, there is nearly a $2 fare difference! It would seem from our primitive plot that in fact Uber possesses the cheaper rides. However, we cannot make a definitive conclusion until we control for other confounding variables
+
+***
+
+## 3. Plot using all three variables.
+
+```{r}
+cab_new2%>%
+  group_by(cab_type_fac)%>%
+  dplyr::summarise(Count = n())
+
+ggplot(cab_new2, aes(x=distance, y=price)) + 
+  geom_point(aes(col=cab_type_fac), alpha=0.1) + 
+  geom_smooth(aes(color = cab_type_fac), method="loess", se=F, size = 2.5) + 
+  labs(y="Price", 
+       x="Distance", 
+       title="Distance vs. Price",
+       col="cab company") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+***
+
+## 4. Describe the plot in plain English. How does this plot differ from the one produced in Part A? Did it match your expectation? Why or why not? Explain the outcome. 
+Compared to the graph we contrived in part A, we have a much clearer sense of how distance and price vary according to the cab type. In the previous graph, there is only one graph that displays a rough positive linear correlation between the distance and price of a trip. However, that is pretty much all the first graph conveys. In addition, it is difficult to draw conclusions from the first graph given that all the data is clustered together.
+
+This graph, on the other hand, offers a broad range of information for us to investigate. First and foremost, this graph is a better representation of the argument we made previously. There is a clearer linear correlation between distance and price regardless of the rideshare company each variable belongs to. The graph also substantiates the result of the summary table above.  If we compare the price of the two rideshare companies at approximately the same distance, the price for riding a Lyft seems to be greater than Uber, and the difference in price seems to increase with increasing distance. If we solely judge this graph, it really looks as though riding a Lyft cab is more expensive than riding a Uber.   
+
+***
+
+## 5. Examination and Improvement
+
+While the graph offers us tons of insightful information, we did observe some abnormalities in the Lyft and Uber data.
+Often times at a particular distance, we see a large spread of observations vertically for the Lyft observations, albeit the seemingly linear trend.  After isolating the Uber obserations we noticed that these vertical bands are also occuring in the Uber observations, but they are obscured by the vast sums of observations. From this pattern, we observe that some of the most expensive trips are not trips that travel the longest distance, but rather are ones that occur at around the 85 percentile in the distribution. 
+
+We suspect that this odd phenomenon stems from the surge multiplier. The surge multiplier usually defaults as 1 in normal hours. However, due to to rush hour, hotspot locations and other confounding variables, the demand for cabs spikes, and the price is adjusted according to the surge multiplier. 
+
+From doing background checks on this data set, we have learned that the price reported factors in the surge multiplier. However, only the Lyft observations report the surge multiplier applied to arrive at the final price. Therefore, it is impossible to control for surge multiplier since we do not know the surge multiplier that Uber uses in any of their observations. Instead, we will 
+control for variables that influence the surge multiplier like distance, time, and location, and afterwards assume the surge multipliers are approximately the same for both companies. 
+
+In order to control for these variables, we will assume our target audience is the most typical rideshare consumer, and we will choose a time and location that has an similar number of observations for both Uber and Lyft. Then, we will filter out all other observations except those which we have selected. We already completed this task for the distance variable, but now we will accomplish the same goal with the time and source and destination variables in a similar fashion. 
+
+Unfortunately, because EPOCH time is outside the material of this class, we have chosen not to control for the time variable.  
+
+
+**Check popular starting and ending locations for two companiesto see if there's any correlation between location and pricing. **
+
+```{r}
+# Check the frequency of locations
+kable(table(cab_new2$source, cab_new2$destination))
+
+# Create new dataframe based grouped by locations and the price.
+hotloc <- cab_new2 %>%
+  group_by(source,destination, cab_type_fac)%>%
+  summarise(frequency = n(), total_price = sum(price))
+
+# Find a high frequent location group for both Uber and Lyft
+hotloc%>%
+  arrange(desc(frequency))
+
+# Control the location using the group "Theater District to North End group" (Uber 451, Lyft 441)
+cab_new3 <- cab_new2%>%
+  filter(source == "Theatre District", destination =="North End")
+```
+
+### Most frequent traveled locations
+
+```{r}
+hotloc%>%
+  group_by(cab_type_fac)%>%
+  arrange(desc(frequency))
+```
+
+As shown from the analysis above, we attempted to find sources and destinations where both the cab companies had a similar number of observations. From the summary table above, we see that the Theatre District to North End route has a similar number of observations for both Lyft and Uber, 451 and 441 repectively. 
+
+***
+
+## 6. Produce another plot reflecting the modifications you made in Question 5. Describe the plot again. Be sure to specifically describe how this plot is different from the previous one.
+
+### Controlling for travelled locations and distance
+
+```{r}
+# Dotplot
+ggplot(cab_new3, aes(y = price, x = distance)) +
+  geom_point(aes(col = cab_type_fac),alpha = 0.3) +
+  geom_smooth(aes(color = cab_type_fac), method="loess", se=F, size = 2.5)
+```
+
+On this graph, we have controlled for the distance and source/destination variables. 
+However, despite controlling for these variables, we are not able to see a clear linear trend from this graph. The vertical bands are still present for both Lyft and Uber variables. 
+We believe this to be the case, however, because we did not control for the time and cab name variables. 
+Therefore we cannot make a comparison between Uber and Lyft from this graph alone. However, we are able to garner more information from the boxplot graph and summary statistics.
+
+```{r}
+ggplot(cab_new3,aes(y = price, col = cab_type_fac)) + 
+  geom_boxplot() + 
+  ylab("Price ($)") +
+  ggtitle("Price comparision between the Two Companies Controlling Distance and Travel Location")+
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+  
+```
+
+From this graph, we are able to make more conclusions. For one, we see that once we have controlled for distance and location the median price of Lyft, $16.921, is greater than the median price of Uber, $14.210. In addition, the range of the Lyft observations seems to be a greater deal larger than the range of the Uber observations. In particular the Lyft data seems to contain more outliers. It is worth mentioning that the number of Uber and Lyft observations are relatively the same, so the comparison is fairer.
+
+We can provide concrete evidence for the analysis above by providing a table of summary statistics for the box plot:
+
+```{r}
+cab_new3%>%
+  group_by(cab_type_fac)%>%
+  dplyr::summarise(Count = n(), Minimum_Price = min(price),Average_Price = mean(price), Median_Price = median(price), Maximum_Price = max(price), Standard_Deviation = sd(price))%>%
+  kable(digit = 3)%>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+ ***
+ 
+## 7. Choose another explanatory variable (This can be either categorical or numerical). Explain why you chose this variable to be used with (or instead of) your secondary explanatory variable.
+Our second explanatory variable is "cab name". We realized that comparing Uber and Lyft observations would be an unfair comparison. This is because within both rideshare companies, there are varying levels of cab names that provide slightly different services from more luxurious cabs to larger cabs to wheel chair accessible vehicles. Obviously, more luxurious cabs will result in a steeper price range. This is evident by the fact that the most expensive cabs in this data set are not even the cabs with the largest distance but rather are the luxury cabs in the 85% percentile of distance. Instead, we would like to compare 6 cab services from the two rideshare companies to ascertain which is the best service given the parameters we set above.
+
+Uber and Lyft provide many services that are similar but differ in one or two facets. We wanted to compare these services side by side to see which one is the best priced given our parameters. The 6 services we wished to compare are *Lux Black XL, Black SUV, Lux Black, Black, Lyft XL, and UberXL*.
+
+
+## 8. Generate another summary table and plot using all of the variables you chose. Describe how this plot looks different from the previous ones
+
+Here we use the dataset where we didn't control for locations (cab_new2) because if we do we can't have a good graph. We would have too few observations to show any relationship.
+
+```{r}
+cab_new_name <- cab_new2%>%
+  filter(name_fac == c("Lux Black XL", "Black SUV", "Lux Black", "Black", "Lyft XL",  "UberXL"))
+  ggplot(cab_new_name,aes(name_fac))+ geom_bar(aes(fill=name_fac), width = 0.5) + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) + 
+    labs(title="Lyft vs. Uber", x="cab name") + 
+    theme(plot.title = element_text(hjust = 0.5, face = "bold"))+
+  facet_wrap( ~ cab_type_fac, nrow=3) 
+```
+
+As we can see in the bar plot, the frequency of each car name is pretty much the same, which helps us to better fairer comparisons.
+
+```{r}
+# Graph for Lyft
+cab_new_name %>% filter(cab_type=="Lyft") %>%
+  ggplot(aes(x=distance, y=price)) + 
+  geom_point(aes(col=name_fac), alpha = 0.2) + 
+  geom_smooth(method="lm", se=F,aes(col = name_fac)) +
+  labs( 
+       y="Price", 
+       x="Distance", 
+       col="cab class",
+       title="Distance vs. Price for Lyft") +
+    theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+# Graph for Uber
+cab_new_name %>% filter(surge_multiplier==1 & cab_type=="Uber") %>%
+  ggplot(aes(x=distance, y=price)) + 
+  geom_point(aes(col=name_fac), alpha = 0.2) + 
+    geom_smooth(method="lm", se=F,aes(col = name_fac)) +
+  labs( 
+       y="Price", 
+       x="Distance", 
+       col="cab class",
+       title="Distance vs. Price for Uber") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+After controlling for distance and location, we realized there were to few observations to see a noticeable trend when showing cab name as our third explanatory variable.
+Therefore, we chose to only control for distance on the graph above.
+
+This graph differs in many aspects from the previous graphs. 
+For one, this graph controls for distance, but not for time or location. In addition, this graph only contains observations from 6 luxury classes out of the 12 total classes in the 2 rideshare companies.
+From this graph, we can see that the cab names from most expensive to least expensive are Black SUV, Black, and Uber XL for Uber, and for Lyft it is Lux Black XL, Lux Black, and Lyft XL. 
+Furthermore, all of the Uber luxury classes have a much higher base price than their Lyft counterparts especially the Uber Black SUV.
+
+Another observation we made was that the Lyft data possessed many more outliers. After inspecting these outliers, we were not able to come up with a single variable that led to the extreme difference in price. What seems to be the case, however, is that these outliers are caused by a combination of differences in time stamp and location. Ordering a cab during rush hour from a location that has lots of traffic can spike the surge multiplier applied to the price.
+
+What seems to be the biggest difference between both graphs is the absence of vertical bands. It seems the primary reason for the vertical bands we saw in previous graphs were the differences in "cab name" variable. Once we seperated the data based on "cab name" as in the graph above, the vertical bands disappeared.
+
+
+
+### Summary table
+
+```{r}
+cab_new_name%>%
+  select(cab_type_fac, name_fac,distance, price)%>%
+  group_by(cab_type_fac,name_fac)%>%
+  summarise(Average_distance = mean(distance),Average_price = mean(price), Min_price = min(price),Median_price = median(price), Max_price = max(price),Standard_deviaiton_price = sd(price))%>%
+  kable(digits = 3)%>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+
+## 9. In conclusion, describe what you learned about the outcome using the various explanatory variables you chose. 
+
+Sometimes, the outcome is related to more than one explanatory variables. In our analysis we first examined the relation between prices and distances, and we found a very week positive linear relationship. We saw bunch of dots in the middle which is almost flat and some outliers above. Then, we included another variable, cab type, which gave us a better plot. We found that for Uber and Lyft, the scatterings are different. For Uber, the spreading is more vertical and there are more outliers, but we still hardly saw the pattern For Lyft, we saw a nice pattern, but the vertical spreading was still wide. As we added cab name as third variable, we could see a clear linear positive correlation for each individual name. As we are doing analysis, if the correlation is not obvious, we try to find other confounders, and control for them. After all confounders are controlled, we can develop better relationship for explanatory variable and responsive variable.
+
+In addition, if better time variable is given we can then control time as well. By doing so we can also expand our analysis to find if there's a difference in pricing between Uber and Lyft in busy times throughout the day. More specifically, we can narrow our scope down to observations that travel within a certain range to certain locations at certain times of the day to compare price difference between the two rideshare companies. 
+
+Overall this analysis offers insights into the differences between Uber and Lyft. In future analysis, researchers can also look into dataset from other major cities or rural areas in United States to further examine the pricing difference of the two companies. By delving into topic carefully, consumers can have a general sense of which company to choose when considering ride-sharing at certain time, certain location, or for certain distance. 
