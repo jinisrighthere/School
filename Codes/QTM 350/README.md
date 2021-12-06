@@ -1,0 +1,1 @@
+This course emphasizes programming for data science, rather than programming for the sake of programming. Students learn essential computer literacy (e.g. shell commands), computing concepts & workflow for reproducible research. Students primarily write Python code and use cloud computing resources.
