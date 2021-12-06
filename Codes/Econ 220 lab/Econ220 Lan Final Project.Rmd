@@ -1,0 +1,383 @@
+---
+title: "Econ220 Lab Final Project"
+author: "Min Jin 2342423"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+
+```{r setup, include=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+```{r,echo=FALSE,results='hide',message=FALSE}
+# load data
+load("Econ220DataF20_ano.rdata")
+# load tidyverse and dplyr package.
+library(tidyverse)
+library(dplyr)
+library(kableExtra)
+library(DT)
+library(plotrix)
+library(Rmisc)
+```
+
+# Introduction and Motivation
+My project focuses on the relationships between student's mobile-phone selection and their expect spending on clothing each semester as well as their expect annual salary in the first year out of the college. By digging into this topic, I believe that my results can give people insight into how mobile phones can have an effect on our budget planning and confidence in the future job market. 
+
+From my past experience I have noticed that Android users and Iphone users all come from different economical background and social beliefs. For example, some people use Iphone because it's trendy and using it makes the users feel more included when socializing with others since Apple now has a more inclusive product environment. On the other side, Android users may be the people who value the function and flexibility in Android phones which has more utility than the Iphones. Therefore, Iphone users may spend more money on clothing each semester and have a higher expected salary in the first year post-graduation than Android users. Therefore, in this project I will treat the category of smartphones that students use as independent variable, and their expect spending on clothing each semester and expected income in the first year after graduation as the dependent variables.  
+
+## Hypothesis  
+#### Question #1: Do Iphone users spend more on clothing each semester than Android users? 
+* **Null hypothesis**: There's no significant relationship between smartphone choices and semester budget for clothing.
+* **Alternative hypothesis**: There's is significant relationship between smartphone choices and semester budget for clothing. Iphone users spend more on clothing each semester than Android users. 
+
+#### Question #2: Do Iphone users have higher expected income in the first year after graduated than Android users? 
+* **Null hypothesis**: There's no significant relationship between smartphone choices and expected income in the first year after graduated than Android users. 
+* **Alternative hypothesis**: There's is significant relationship between smartphone choices and expected income in the first year after graduated than Android users. Iphone users have a higher expected income in the first year after graduation than Android users.
+
+***
+
+## External reources
+There are several external studies that agree with my alternative hypothesis. For example, one of the leading crowdsourced shopping platform [Slickdeals](https://slickdeals.net/) has conducted survey to 1,000 iphone users and 1,000 Android users asking about their lifestyle choices, and the results show that iphone users have a higher average spending on clothes ($54.77 difference) than Android users. In addition, the survey also shows that iphone users have an average salary of $53,251 while android users have an average salary of $37,040.
+
+```{r, echo=FALSE, out.width="50%", fig.cap="Figure1: from [Slickdeals](https://slickdeals.net/)", fig.align="center"}
+knitr::include_graphics("Slickdeals_iPhone_Vs_Android_Infographic.jpg")
+```
+
+Furthermore, another study also examines the difference in User's risk and security perception of Android and Iphone. In [*Should the Users be Informed? On Differences in Risk Perception between Android and iPhone Users*](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.386.353&rep=rep1&type=pdf) (Benenson et al. 2014), researchers conclude that Android users tend to be more aware of potential risks and security threats comparing to Iphone users from the result of 700 surveys. Not only does this research offer insight into the social behavior difference between Android and Iphone users, but it also serves as a base for this project to elaborate more on how choice of smartphone can have an effect on our budget spending behavior and confidence in future income. 
+
+Although academic research regarding specific smartphone brand on social behavior is limited, I have found other paper suggesting a correlation between usage of communication technology and academic success. In [*Cell phone usage and academic performance: An experiment*](https://www.sciencedirect.com/science/article/pii/S0360131517302324#sec4) (Felisoni et al. 2018), the author suggests a strong significant negative correlation between communication technology and academic performance. This result is also demonstrated with the graph shown blow:
+
+```{r, echo=FALSE, out.width="50%", fig.cap="Figure2: from [Cell phone usage and academic performance: An experiment](https://www.sciencedirect.com/science/article/pii/S0360131517302324#sec4)", fig.align="center"}
+knitr::include_graphics("1-s2.0-S0360131517302324-gr7.jpg")
+```
+
+Therefore, my study would continue to build on the past studies and look at how difference in smartphone OS choices would affect student's expected income in the first year after graduated as well as their budget on clothing in each semester. 
+
+***
+
+## Data Cleaning
+First I load variables of interest into a new data frame and rename them.
+```{r,echo=TRUE}
+# transfer all variables of interest into new data frame called allvariabels
+
+# rename
+#57 - iphone or android
+#52 - expected first year salary out of college
+#39 - money on cloth per semester
+allvariables <- Econ220DataF20_ano%>%
+  select(iphone_or_android = q57, first_year_salary = q52, semester_cloth_budget = q39)
+
+# look at the new data
+allvariables[1:10,]
+```
+
+Now I need to check the data and exclude potential outliers and NA.
+
+## {.tabset}
+### Check NA
+
+```{r,echo=TRUE}
+# check the dataset
+summary(allvariables)
+str(allvariables)
+
+# check number of NA in the dataset
+sum(is.na(allvariables))
+# there's no NA
+```
+
+### Iphone or Android Users
+
+```{r,echo=TRUE,results='hide'}
+#convert iphone_or_android to factors with two levels 
+allvariables$iphone_or_android <- factor(allvariables$iphone_or_android,levels = c("Android","Iphone"))
+levels(allvariables$iphone_or_android)
+```
+
+### Expected Salary After 1st Year of Gradution
+
+```{r}
+#check first_year_salary variable
+summary(allvariables$first_year_salary)
+# it's impossible to have 0 in this variable, hence removing 0
+allvariables <- allvariables[allvariables$first_year_salary > 0,]
+# Remove observations highers than 200k.
+allvariables$first_year_salary[allvariables$first_year_salary > 200000] <- NA
+```
+According to the article ["Average Starting Salary for Recent College Grads Hovers Near $51,000"](https://www.shrm.org/resourcesandtools/hr-topics/compensation/pages/average-starting-salary-for-recent-college-grads.aspx#:~:text=Average%20Starting%20Salary%20for%20Recent%20College%20Grads%20Hovers%20Near%20%2451%2C000,-Starting%20pay%20has&text=Recent%20college%20graduates%20in%20the,Colleges%20and%20Employers%20(NACE).) published on [shrm.org](shrm.org) using data from [National Association of Colleges and Employers (NACE)](https://www.naceweb.org/uploadedfiles/files/2019/publication/executive-summary/2019-nace-salary-survey-summer-executive-summary.pdf), the average salary for first year graduate is about $51,000. Therefore, it's unusual to have an expected salary of more than 200k. Hence removing any observations that have more than 200k of expected salary. 
+
+### Semester Cloth Budget
+
+```{r}
+# check semester_cloth_budget 
+table(allvariables$semester_cloth_budget)
+# convert $0, $100 and $20 to number
+allvariables$semester_cloth_budget[allvariables$semester_cloth_budget == "$0"] <- "0"
+allvariables$semester_cloth_budget[allvariables$semester_cloth_budget == "$20"] <- "20"
+allvariables$semester_cloth_budget[allvariables$semester_cloth_budget == "$100"] <- "100"
+#convert variable to numeric variable
+allvariables$semester_cloth_budget<- as.numeric(allvariables$semester_cloth_budget)
+
+summary(allvariables$semester_cloth_budget)
+```
+
+## {-}
+***
+### Remove NA 
+
+```{r}
+#remove NA
+allvariables <- na.omit(allvariables)
+summary(allvariables)
+```
+
+***
+
+## Corrected data
+
+Create two subsets of just Iphone or Android users
+```{r}
+iphone_usr <- allvariables%>%
+  filter(iphone_or_android == "Iphone")
+android_usr <- allvariables%>%
+  filter(iphone_or_android == "Android")
+```
+
+Below is the table of my corrected data
+```{r,echo=TRUE}
+datatable(allvariables, rownames = FALSE, filter="top", options=list(pageLength= 5, scrollX=T))
+```
+
+***
+
+# Graphs and Analysis
+
+## Distribution of Android and Iphone Users
+Here are the proportion distribution table and graph of Android and Iphone Users from the dataset.
+
+### {.tabset}
+#### Table 
+```{r}
+kable(prop.table(table(allvariables$iphone_or_android)),col.names = c("OS","Proportion"),caption = "Table of Proportion Distribution of OS Users", digits = 4)%>%
+  kable_styling(position = "center",bootstrap_options = "striped", full_width = F)
+```
+
+#### Graph
+```{r}
+#check the proportion
+ggplot(allvariables) +
+  geom_bar(mapping = aes(x =iphone_or_android,y = ..prop..,group = 1),stat = "count") +
+  xlab("Phone Choice")+ylab("Proportion") + 
+  ggtitle("Distribution of Student's OS Choices")+
+  theme(plot.title = element_text(hjust = 0.5,face = "bold"))
+
+```
+
+### {-}
+***
+From the distribution it's clear that most students in the dataset are using Iphone (91.3%), whereas only small proportion of students using Android (8.7%)
+
+## Distribution of Budget for Clothing Each Semester
+### {.tabset}
+#### Descriptive Statistics
+```{r}
+# check the descriptive statistics of cloth budget in each semester
+table(allvariables$iphone_or_android)
+allvariables%>%
+  group_by(iphone_or_android)%>%
+  dplyr::summarise(Observation = n(), Mean = mean(semester_cloth_budget),"Standard Deviation" = sd(semester_cloth_budget), "Standard Error" = std.error(semester_cloth_budget))%>%
+  kable(digits = 3,caption = "Summary Statistics of Semester Clothing Budget Variable")%>%
+  kable_styling(position = "center",bootstrap_options = "striped", full_width = F)
+
+summary(iphone_usr$semester_cloth_budget)
+summary(android_usr$semester_cloth_budget)
+```
+
+#### Histogram
+```{r}
+#graph histograms to show distribution of clothing budget by phone OS. 
+ggplot(iphone_usr,aes(x = semester_cloth_budget)) + 
+  geom_bar(fill = "red") + 
+  xlab("Budget on Clothing Each Semester (USD)") +
+  ylab("Frequency") +
+  ggtitle("Distribution of Budget on Clothing of Iphone Users")+
+  theme(plot.title = element_text(hjust = 0.5,size = 10,face = "bold"))
+
+ggplot(android_usr,aes(x = semester_cloth_budget)) + 
+  geom_bar(fill = "green") + 
+  xlab("Budget on Clothing Each Semester (USD)") +
+  ylab("Frequency") +
+  ggtitle("Distribution of Budget on Clothing of Android Users")+
+  theme(plot.title = element_text(hjust = 0.5,size = 10,face = "bold"))
+```
+
+#### Boxplot
+```{r}
+ggplot(iphone_usr, aes(y = semester_cloth_budget)) +
+  geom_boxplot() + 
+  xlab("Iphone Users")+
+  ylab("Budget on Clothing Each Semester (USD)")+
+  ggtitle("Distribution of Budget on Clothing of Iphone Users")+
+  theme(plot.title = element_text(hjust = 0.5,size = 10,face = "bold"))
+
+ggplot(android_usr, aes(y = semester_cloth_budget)) +
+  geom_boxplot() + 
+  xlab("Android Users")+
+  ylab("Budget on Clothing Each Semester (USD)")+
+  ggtitle("Distribution of Budget on Clothing of Android Users")+
+  theme(plot.title = element_text(hjust = 0.5,size = 10,face = "bold"))
+```
+
+### {-}
+***
+From the tables and plots, we see that iphone users have higher mean budget on clothing each semester compare to Android Users. This finding concur with the conclusion from the survey conducted by [Slickdeals](https://slickdeals.net/). Although there are potential outliers in the dataset using outlier formulars ( <=Q1 - 1.5IQR or >=Q3 + 1.5IQR), these "outliers" are considered as normal since if high values are removed then there will be too few observations for Android users to conduct meaningful analysis. One similarity that Iphone users and Android Users share is that both groups have a very high semester budget for clothing comparing to their means. For example, in the IOS user group, the highest semester budget for clothing is 8000, and in the Android OS user group, the highest is 5000 dollars.
+
+Although the number of observations for the Android users is far fewer than that of Iphone users, the histogram shows the distributions of both groups and demonstrates the difference and similarity between the two groups clearly. 
+
+***
+
+## Distribution of Expected Salary in the First Year after Graduation
+### {.tabset}
+#### Descriptive Statistics
+```{r}
+# check the descriptive statistics of expected salary in the first year after graduation 
+allvariables%>%
+  group_by(iphone_or_android)%>%
+  dplyr::summarise(Observation = n(), "Mean" = mean(first_year_salary),"Standard Deviation" = sd(first_year_salary), "Standard Error" = std.error(first_year_salary))%>%
+  kable(digits = 3,caption = "Summary Statistics of Expected First irst Year Salary in the First Year after Graduation Variable")%>%
+  kable_styling(position = "center",bootstrap_options = "striped", full_width = F)
+
+summary(iphone_usr$first_year_salary)
+summary(android_usr$first_year_salary)
+```
+
+#### Histogram
+```{r}
+#graph histograms to show distribution of expected salary in the first year after graduation by phone OS. 
+ggplot(iphone_usr,aes(x = first_year_salary)) + 
+  geom_bar(fill = "red") + 
+  xlab("Expected Salary in the First Year after Graduation (USD)") +
+  ylab("Frequency") +
+  ggtitle("Distribution of First Year Expected Salary of Iphone Users")+
+  theme(plot.title = element_text(hjust = 0.5,size = 10,face = "bold"))
+
+ggplot(android_usr,aes(x = first_year_salary)) + 
+  geom_bar(fill = "green") + 
+  xlab("Expected Salary in the First Year after Graduation (USD)") +
+  ylab("Frequency") +
+  ggtitle("Distribution of First Year Expected Salary of Android Users")+
+  theme(plot.title = element_text(hjust = 0.5,size = 10,face = "bold"))
+```
+
+#### Boxplot
+```{r}
+ggplot(iphone_usr, aes(y = first_year_salary)) +
+  geom_boxplot() + 
+  xlab("Iphone Users")+
+  ylab("Expected Salary in the First Year after Graduation (USD)")+
+  ggtitle("Distribution of First Year Expected Salary of Iphone Users")+
+  theme(plot.title = element_text(hjust = 0.5,size = 10,face = "bold"))
+
+ggplot(android_usr, aes(y = first_year_salary)) +
+  geom_boxplot() + 
+  xlab("Android Users")+
+  ylab("Expected Salary in the First Year after Graduation (USD)")+
+  ggtitle("Distribution of First Year Expected Salary of Android Users")+
+  theme(plot.title = element_text(hjust = 0.5,size = 10,face = "bold"))
+```
+
+### {-}
+***
+The graphs and table shows that Iphone users have slight higher mean (difference of 14.2917) and median (difference of 100) expected income in the first year after graduation comparing with Android users. This result, again, also concur with the conclusion from the survey conducted by [Slickdeals](https://slickdeals.net/). Although presence of potential outliers are observed, these are considered as normal since they are not "bad" data. Other than the difference in mean and median, Iphone users and Android Users also have difference in the maximum value of expected salary in the first year after graduation. The iphone user has max of 200k while the Android users have maximum of 8000. From the histogram the Iphone users seem to follow a normal distribution, but this pattern is hard to see in Android users' group due to few observations. 
+
+By looking at the graphs and tables, we can see that the boxplot best summarizes the two variables while the histogram for Iphone users is the best in showing the distribution of observations. The distribution histogram of Iphone users' expected first year salary after graduation approximate a normal distribution but a bit skew to the right. 
+
+***
+
+# Analysis Confidence Intervals Testing
+In this section I will answer my questions in the first section using hypothesis testing to see if the difference in means are significant in both questions. The questions are shown below:
+
+#### Question #1: Do Iphone users spend more on clothing each semester than Android users? 
+* **Null hypothesis**: There's no significant relationship between smartphone choices and semester budget for clothing.
+* **Alternative hypothesis**: There's is significant relationship between smartphone choices and semester budget for clothing. Iphone users spend more on clothing each semester than Android users. 
+
+#### Question #2: Do Iphone users have higher expected income in the first year after graduated than Android users? 
+* **Null hypothesis**: There's no significant relationship between smartphone choices and expected income in the first year after graduated than Android users. 
+* **Alternative hypothesis**: There's is significant relationship between smartphone choices and expected income in the first year after graduated than Android users. Iphone users have a higher expected income in the first year after graduation than Android users.
+
+***
+
+## Do Iphone users spend more on clothing each semester than Android users?
+First let's compare the mean semester budget on clothing by different OS users.
+```{r,echo=TRUE}
+allvariables%>%
+  group_by(iphone_or_android)%>%
+  dplyr::summarise(Average_budget = mean(semester_cloth_budget))%>%
+  kable(digits = 3)%>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+  
+```
+
+From the table a higher mean is observed in Android users, which objects our hypothesis. Now let's conduct hypothesis test to see if the difference in mean is significant
+```{r}
+t.test(semester_cloth_budget ~ iphone_or_android, data = allvariables)
+```
+
+The result of 95% confidence interval shows that we are 95% confident that the true mean difference between two groups falls between -899.3478 and 917.9311. Since this interval contains 0 and the calculated p-value (0.9731) < 0.05 at 5% significant level, we fail to reject the null hypothesis and conclude that there's not a significant relationship between smartphone choice and semester budget on clothing. We can not say that Iphone or Android users have higher population average semester budget spending than the other group. 
+
+This result is largely due to lack of observations of Android users. If we have more observations of Android users (for example, 200 IOS users and 200 Android users), the test may yield a different result. 
+
+***
+
+## Do Iphone users have higher expected income in the first year after graduing colege than than Android users?
+Let's then compare the mean expected salary in the first year after graduation by different OS users.
+```{r}
+allvariables%>%
+  group_by(iphone_or_android)%>%
+  dplyr::summarise(Average_expectation = mean(first_year_salary))%>%
+  kable(digits = 3)%>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+Now let's conduct hypothesis testing to see if the difference in means is significant.
+```{r}
+t.test(first_year_salary ~ iphone_or_android,data = allvariables)
+```
+
+The result of 95% confidence interval tells that we are 95% confident that the true mean difference between the two groups falls between -17159.913 and 1244.746. Since this interval contains 0, and the calculated p-value (0.08644) < 0.05 at 5% significant level, we fail to reject the null hypothesis and conclude that there's no significant relationship between smartphone choices and expected income in the first year after graduated than Android users. We can not say that one group has higher population mean expected salary in the first year after graudated than the other group. Hence the difference of means is not significant. 
+
+***
+
+# Conclusion and Summary
+
+## Based onour findings
+This project is designed to find the correlation between students' phone OS choices and their semester budget on clothing, in addition to the relationship between students' phone OS choices and their expected income in the first year after graduating college. 
+
+The two hypotheses driving this analysis are: 1) Iphone users spend more on clothing each semester than Android users 2) Iphone users have a higher expected income in the first year after graduation than Android users.
+
+These two hypotheses are based on the survey conducted by [Slickdeals](https://slickdeals.net/) as well as the research from [*Cell phone usage and academic performance: An experiment*](https://www.sciencedirect.com/science/article/pii/S0360131517302324#sec4) (Felisoni et al. 2018). These two studies offer insight into the correlation between smartphone OS users and their social behavior, spending on clothing, average income, and other characteristics. In the survey, results suggest that Iphone users tend to have higher average income and clothing spending compare to Android users, which implicate that Iphone users typically have higher standard of living. Although this conclusion concur with the stereotype of high pricing of Iphone comparing with Anroid OS phones, I disagree with this conclusion because it's possible that Iphone users prioritize functionality over pricing, hence the reason of choosing Iphone or Android. Therefore, by investigating this topic, I can gain more insight into how choices of smart phone OS correlates with social behaviors and personal spending habits.  
+
+Despite the results of hypothesis testing denies a statistically significant result for either hypotheses, this rejection can be explained by several factors. First, since the sample is drawn from a voluntary survey of students in Econ-220 Lab: Probability & Statistics for Economists Lab, it can introduce uncertainty in sample observations. For example, in the 132 observations from the dataset, only 12 people use Android OS comparing with 120 Iphone users. This unbalanced proportion is due to the small sample size. If we are able to survey more students and replicate the same survey randomly, we may get more Android users and produce significant results in the later hypothesis testing. However, a natural bias with this survey method is the demographic of respondents. Since all samples are taken from Econ-220 Lab: Probability & Statistics for Economists Lab at Emory, it's possible that most people have higher standard of living comparing with students from other schools. Therefore, it's reasonable for most students in this survey to choose Iphone because they can afford it. Another factor that may introduces error to the study is self-report data collection method. Since all response are reported by students themselves, it's likely that some of them provided non-accurate response if they didn't treat the survey seriously. 
+
+***
+
+## Application and Future Work
+Although hypothesis testing yield insignificant result, there are still meaningful conclusion that we can draw from this study. First, descriptive statistics agree with the survey from [Slickdeals](https://slickdeals.net/), suggesting that Iphone users have higher average spending on clothing than Android users. In addition, though prediction on future income doesn't imply actual salary when working, the descriptive statistics and plots of students' prediction on their salary in the first year after graduation do suggest that Iphone users have more confident in their future income than Android users. This confidence may be the result from knowing the general demographic of Iphone users, which according to the study at [Slickdeals](https://slickdeals.net/), have higher average income than Android users. 
+
+As I have discussed in the previous section, future study on the same topic will able to produce more significant result when more random samples are taken outside the scope of Econ-220 Lab: Probability & Statistics for Economists Lab. In addition, under the condition of COVID-19, it would be interesting to examine the difference of study effeciency by different OS user group since mobile communication is one of the most important function for students especially during the pandemic. With more random samples and good data, this study will becmome more significant and offer insight into the correlation between smartphone OS and other social behavior in the future. 
