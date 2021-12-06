@@ -1,0 +1,1 @@
+This course is a follow-up to QTM 100: Introduction to Statistical Inference. Students will apply many of the concepts and skills learned in QTM 100 to a broader field of statistical analysis: multivariable analysis and model building.
