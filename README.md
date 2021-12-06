@@ -7,14 +7,15 @@ This is where I showcase the data analysis projects I have done some of them are
 
 
 **Factors influencing the change in the medium housing index in Georgia (GA), United States**
--[View](http://htmlpreview.github.io/?https://github.com/jinisrighthere/School/blob/main/Codes/Econ%20320/finalProject.html)
--[File location](https://github.com/jinisrighthere/School/tree/main/Codes/Econ%20320)
+- [View](http://htmlpreview.github.io/?https://github.com/jinisrighthere/School/blob/main/Codes/Econ%20320/finalProject.html)
+- [File location](https://github.com/jinisrighthere/School/tree/main/Codes/Econ%20320)
 
 **Factors affecting pricing of Uber and Lyft**
--[View](http://htmlpreview.github.io/?https://github.com/jinisrighthere/School/blob/main/Codes/QTM%20150/QTM150_final.html)
--[File location](https://github.com/jinisrighthere/School/tree/main/Codes/QTM%20150)
+- [View](http://htmlpreview.github.io/?https://github.com/jinisrighthere/School/blob/main/Codes/QTM%20150/QTM150_final.html)
+- [File location](https://github.com/jinisrighthere/School/tree/main/Codes/QTM%20150)
 
 **Correlation between sleep and cigarette consumption**
-[View](https://htmlpreview.github.io/?https://github.com/jinisrighthere/School/blob/main/Codes/QTM%20151/Final-project-151.html)
-[File location](https://github.com/jinisrighthere/School/tree/main/Codes/QTM%20151)
+- [View](https://htmlpreview.github.io/?https://github.com/jinisrighthere/School/blob/main/Codes/QTM%20151/Final-project-151.html)
+- [File location](https://github.com/jinisrighthere/School/tree/main/Codes/QTM%20151)
 
+**
