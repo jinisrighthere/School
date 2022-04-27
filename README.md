@@ -27,5 +27,5 @@ This is where I showcase the data analysis projects I have done while taking Qua
 - [File location](https://github.com/jinisrighthere/School/tree/main/Codes/QTM%20350)
 
 **Create a class to work with matrices using basic Python**
-- [View](https://github.com/jinisrighthere/School/blob/main/Codes/QTM%20385/MidtermMyLinalgClassFinal_MinJin.ipynb)
+- [View](https://github.com/jinisrighthere/School/blob/main/Codes/QTM%20385/Matrix%20Calculator%20MinJin.ipynb)
 - [File location](https://github.com/jinisrighthere/School/tree/main/Codes/QTM%20385)
